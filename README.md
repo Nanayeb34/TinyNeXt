@@ -8,7 +8,7 @@ Official pytorch implementation of "**An Efficient Hybrid Vision Transformer for
 <hr />
 <p align="center">
   <img src="fig\top1.png" width=80%> <br>
-  Comparison with SOTA models on ImgeNet-1K. The throughput is measured on Nvidia GTX 3090.
+  Comparison with SOTA models on ImgeNet-1K. The throughput is measured on Nvidia RTX 3090.
 </p>
 
 ## Repository Structure
