@@ -15,7 +15,6 @@ Official pytorch implementation of "**An Efficient Hybrid Vision Transformer for
   Overview of TinyNeXt
 </p>
 <hr />
-
 ## Repository Structure
 
 - [classification](classification/README.md)/: Image classification related code and checkpoint.
@@ -54,4 +53,4 @@ We thank but not limited to following repositories for providing assistance for 
 - [PyTorch](https://pytorch.org/)
 - [TIMM](https://github.com/rwightman/pytorch-image-models)
 - [MMDetection](https://github.com/open-mmlab/mmdetection)
-- [MMsegmentation](https://github.com/open-mmlab/mmsegmentation)
+- [MMSegmentation](https://github.com/open-mmlab/mmsegmentation)
