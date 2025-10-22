@@ -50,14 +50,14 @@ Latency is measured on Nvidia Jetson Nano.
 | TinyNeXt-S |    2.3M    | 3.5G  | 75.5 |
 | TinyNeXt-M |    3.3M    | 5.1G  | 76.9 |
 
-# Acknowledgements
+## Acknowledgements
 We thank but not limited to following repositories for providing assistance for our research:
 - [PyTorch](https://pytorch.org/)
 - [TIMM](https://github.com/rwightman/pytorch-image-models)
 - [MMDetection](https://github.com/open-mmlab/mmdetection)
 - [MMSegmentation](https://github.com/open-mmlab/mmsegmentation)
 
-## Cite
+## Citation
 
 ``````
 @InProceedings{Zeng_2025_ICCV,
