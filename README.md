@@ -56,3 +56,17 @@ We thank but not limited to following repositories for providing assistance for 
 - [TIMM](https://github.com/rwightman/pytorch-image-models)
 - [MMDetection](https://github.com/open-mmlab/mmdetection)
 - [MMSegmentation](https://github.com/open-mmlab/mmsegmentation)
+
+## Cite
+
+``````
+@InProceedings{Zeng_2025_ICCV,
+	author    = {Zeng, Fanhong and Li, Huanan and Guan, Juntao and Fan, Rui and Wu, Tong and Wang, Xilong and Lai, Rui},
+	title     = {An Efficient Hybrid Vision Transformer for TinyML Applications},
+	booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+	month     = {October}, 
+	year      = {2025},    
+	pages     = {19914-19924} 
+}
+``````
+
