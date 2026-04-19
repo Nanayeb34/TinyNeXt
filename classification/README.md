@@ -1,98 +1,198 @@
-# Image Classification Implementation
+# Image Classification
 
-## Setup
+## Author Results (full ImageNet-1K, 100 epochs)
 
-```sh
-conda create -n tinynext python=3.9
-conda activate tinynext
-pip install -r requirements.txt
-```
+| Model | Top-1 | Top-5 | #Params | MACs | Latency | Logs |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| TinyNeXt-M | 75.3% | 92.2% | 2.3M | 475M | 19.4ms | [log](logs/tinynext_m/rank0.log) |
+| TinyNeXt-S | 72.7% | 90.9% | 1.3M | 304M | 14.3ms | [log](logs/tinynext_s/rank0.log) |
+| TinyNeXt-T | 71.5% | 90.2% | 1.0M | 259M | 12.7ms | [log](logs/tinynext_t/rank0.log) |
 
-## Image Classification for [ImageNet-1K](https://www.image-net.org):
+Latency measured on Nvidia Jetson Nano.
 
-| Model | Top-1 accuracy | #params | MACs | Latency | Logs |
-|:--------------:|:----:|:---:|:--:|:--:|:--:|
-| TinyNeXt-M |   75.3%   |    2.3M    |   475M   |     19.4ms     |  [M](logs/tinynext_m/rank0.log)    |
-| TinyNeXt-S |   72.7%   |    1.3M    |   304M   |     14.3ms     |   [S](logs/tinynext_s/rank0.log)   |
-| TinyNeXt-T |   71.5%   |   1.0M   |   259M   |     12.7ms     |   [T](logs/tinynext_t/rank0.log)   |
+---
 
-Latency is measured on Nvidia Jetson Nano.
+## Scaling Study (Modal cloud, 50 epochs, 1× A10G)
 
-## Training
-### Dataset Preparation
+Training TinyNeXt-T on ImageNet subsets to study data-scaling behaviour and
+extrapolate performance to the full dataset.
 
-Download the [ImageNet-1K](http://image-net.org/) dataset and structure the data as follows:
-```
-/path/to/imagenet-1k/
-  train/
-    class1/
-      img1.jpeg
-    class2/
-      img2.jpeg
-  validation/
-    class1/
-      img3.jpeg
-    class2/
-      img4.jpeg
-```
+### TinyNeXt-T results
 
-Train TinyNeXt-M with 8 GPUs in one node: 
+| Train size | Top-1 | Top-5 |
+|:---:|:---:|:---:|
+| 50k  | 28.67% | 52.27% |
+| 100k | 40.52% | 65.13% |
+| 150k | 46.31% | 70.76% |
+| 200k | 51.81% | 75.71% |
+| **1.28M (extrapolated)** | **~66%** | **~86%** |
 
-```sh
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 29501 --use_env main.py --model 'tinynext_m' --data-path '/data/imagenet' --reprob 0.0 --aa="" --mixup 0 --cutmix 0.0
-```
+Extrapolation uses a saturating (Michaelis-Menten) fit with 90% bootstrap CI.
+See [`plot_scaling.py`](plot_scaling.py) and [`scaling_curve.png`](scaling_curve.png).
 
-Train TinyNeXt-S with 8 GPUs in one node: 
+### Baseline model comparison (50k ImageNet val, 1× A10G)
 
-```sh
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 29501 --use_env main.py --model 'tinynext_s' --data-path '/data/imagenet' --reprob 0.0 --aa="" --mixup 0 --cutmix 0.0
-```
+| Model | Top-1 | Top-5 | Source |
+|:---:|:---:|:---:|:---:|
+| MobileOne-S0 | — | — | Apple (reparametrised) |
+| MobileNet V1 1.0 | — | — | timm pretrained |
+| PVTv2-B0 | — | — | timm pretrained |
+| EfficientViT-M2 | — | — | Microsoft Cream |
+| ShuffleNet V2 x1.0 | — | — | torchvision pretrained |
 
+Run the baseline eval (instructions below) to fill in these numbers.
 
-Train TinyNeXt-T with 8 GPUs in one node: 
+---
+
+## Reproduction Guide
+
+### Prerequisites
 
 ```sh
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 29501 --use_env main.py --model 'tinynext_t' --data-path '/data/imagenet' --reprob 0.0 --aa="" --mixup 0 --cutmix 0.0
+pip install modal
+modal token new          # authenticate with Modal
 ```
 
-## Evaluation
+Create a HuggingFace secret (needed for the ImageNet download only):
 
-<details>
-<summary>
-TinyNeXt-M
-</summary>
-
-Test  with 8 GPUs in one node:
-
-```
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 29501 --use_env \
-main.py --model 'tinynext_m' --data-path '/data/imagenet' --eval --resume "logs/tinynext_m/tinynext_m.pth"
+```sh
+modal secret create huggingface-secret HF_TOKEN=<your_hf_token>
 ```
 
-This should give `* eval  loss: 1.0679	top1: 75.28	top5: 92.24` 
+Your HuggingFace account must have access to
+[ILSVRC/imagenet-1k](https://huggingface.co/datasets/ILSVRC/imagenet-1k)
+(request access on the dataset page — approved instantly).
 
-<details>
-<summary>
-TinyNeXt-S
-</summary>
-Test  with 8 GPUs in one node:
+---
 
-```
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 29501 --use_env \
-main.py --model 'tinynext_s' --data-path '/data/imagenet' --eval --resume "logs/tinynext_s/tinynext_s.pth"
-```
+### Step 1 — Deploy the training endpoint
 
-This should give `* eval  loss: 1.1817	top1: 72.70	top5: 90.93` 
-
-<details>
-<summary>
-TinyNeXt-T
-</summary>
-Test  with 8 GPUs in one node:
-
-```
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 29501 --use_env \
-main.py --model 'tinynext_t' --data-path '/data/imagenet' --eval --resume "logs/tinynext_t/tinynext_t.pth"
+```sh
+cd classification/
+modal deploy train_modal.py
+# Modal prints: https://<your-username>--tinynext-imagenet-endpoint.modal.run
 ```
 
-This should give `* eval  loss: 1.2419	top1: 71.54	top5: 90.24` 
+Set the URL as a shell variable for the commands below:
+
+```sh
+TRAIN_URL="https://<your-username>--tinynext-imagenet-endpoint.modal.run"
+```
+
+---
+
+### Step 2 — Download ImageNet to the Modal volume
+
+Streams only what is needed (~25 GB): up to 200 images/class for training and
+the full 50k official validation set. Fully resumable — safe to re-run.
+
+```sh
+curl -X POST $TRAIN_URL/download
+# Monitor: modal app logs tinynext-imagenet
+# Takes ~1-2 hours on first run.
+```
+
+---
+
+### Step 3 — Train TinyNeXt-T on dataset subsets
+
+#### Single run
+
+```sh
+curl -X POST $TRAIN_URL/train \
+  -H 'Content-Type: application/json' \
+  -d '{"model_name":"tinynext_t","num_samples":200000,"epochs":50}'
+```
+
+Valid values: `model_name` ∈ `{tinynext_m, tinynext_s, tinynext_t}`,
+`num_samples` ∈ `{50000, 100000, 150000, 200000}`.
+
+#### All 4 subset sizes in parallel
+
+```sh
+curl -X POST $TRAIN_URL/train_scaling \
+  -H 'Content-Type: application/json' \
+  -d '{"epochs":50}'
+```
+
+Spawns 4 parallel A10G GPU jobs. Each run takes ~1–3 hours depending on subset
+size. Checkpoints are saved every epoch so jobs resume automatically on
+container restart.
+
+#### Check progress
+
+```sh
+curl $TRAIN_URL/status
+```
+
+---
+
+### Step 4 — Retrieve training logs
+
+Pull `stats.json` (per-epoch loss and accuracy) from the Modal volume:
+
+```sh
+# All runs at once
+modal volume get tinynext-imagenet-vol checkpoints/ classification/logs/ --recursive
+```
+
+Expected layout after pulling:
+
+```
+classification/logs/tinynext_t/
+  50k/stats.json
+  100k/stats.json
+  150k/stats.json
+  200k/stats.json
+```
+
+---
+
+### Step 5 — Evaluate baseline models
+
+```sh
+cd classification/
+modal deploy eval_baselines_modal.py
+
+EVAL_URL="https://<your-username>--tinynext-eval-baselines-endpoint.modal.run"
+
+# Trigger all 5 evals in parallel (~15-20 min)
+curl -X POST $EVAL_URL/eval
+
+# Fetch results once complete
+curl $EVAL_URL/results
+```
+
+Results are also saved to the Modal volume:
+
+```sh
+modal volume get tinynext-imagenet-vol eval_baselines.json .
+```
+
+Monitor logs:
+
+```sh
+modal app logs tinynext-eval-baselines
+```
+
+---
+
+### Step 6 — Generate plots
+
+```sh
+pip install matplotlib scipy numpy
+```
+
+#### Loss and accuracy curves
+
+```sh
+python classification/plot_loss_curves.py
+# Output: classification/loss_curves.png
+```
+
+#### Scaling curve with extrapolation to full ImageNet
+
+```sh
+python classification/plot_scaling.py
+# Output: classification/scaling_curve.png
+```
